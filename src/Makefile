@@ -1,7 +1,7 @@
 CC=gcc
 
 # Compiler flags
-CFLAGS=-Wall -Wextra -Werror -pedantic
+CFLAGS=-Wall -Wextra -pedantic -pthread
 
 # Source files
 SRCSU1=$(wildcard src-u1/*.c)

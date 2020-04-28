@@ -1,13 +1,14 @@
 #define _XOPEN_SOURCE 700   // Allows usage of some GNU/Linux standard functions and structures
 
+#include "communication.h"
+#include "parsing.h"
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "communication.h"
 
 void* threadFunc(void* arg) {
     Message* messagePtr = (Message*) arg;
@@ -22,19 +23,19 @@ void* threadFunc(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
+    CmdArgs args = parseArgs(argc, argv);
     int publicFD;
-    char fifoName[] = "fifo"; // TODO: get fifoname from command line argument parsing
 
-    if (mkfifo(fifoName, 0660) < 0) {
+    if (mkfifo(args.fifoname, 0660) < 0) {
         perror("mkfifo");
         return 1;
     }
 
-    publicFD = open(fifoName, O_RDONLY);
+    publicFD = open(args.fifoname, O_RDONLY);
 
     if (publicFD < 0) {
         perror("open");
-        unlink(fifoName);
+        unlink(args.fifoname);
         return 1;
     }
 
@@ -47,11 +48,11 @@ int main(int argc, char* argv[]) {
 
     if (close(publicFD) < 0) {
         perror("close");
-        unlink(fifoName);
+        unlink(args.fifoname);
         return 1;
     }
 
-    if (unlink(fifoName) < 0) {
+    if (unlink(args.fifoname) < 0) {
         perror("unlink");
         return 1;
     }

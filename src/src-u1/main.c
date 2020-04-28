@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <string.h>
+#include <stdio.h>
 
 #define MAX_DURATION    200
 
@@ -39,7 +39,7 @@ void* threadFunc(void* arg) {
     sprintf(privateFifoName, "/tmp/%d.%lu", request.pid, request.tid);
     mkfifo(privateFifoName, 0660);
     privateFD = open(privateFifoName, O_RDONLY);
-    
+
     read(privateFD, &response, sizeof(Message));
 
     close(privateFD);
@@ -48,15 +48,17 @@ void* threadFunc(void* arg) {
     return NULL;
 }
 
+#include "parsing.h"
+
 int main(int argc, char* argv[]) {
+    CmdArgs args = parseArgs(argc, argv);
     pthread_t threadIds[32];
-    char fifoName[] = "fifo"; // TODO: get fifoname from command line argument parsing
 
     srand(time(NULL));
 
     // Open FIFO for requests to the server
     do {
-        publicFD = open(fifoName, O_WRONLY);
+        publicFD = open(args.fifoname, O_WRONLY);
         if (publicFD < 0) sleep(1);
     } while (publicFD < 0);
 

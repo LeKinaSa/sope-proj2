@@ -11,8 +11,7 @@ SRCSQ1=$(wildcard src-q1/*.c)
 PROGU1=U1
 PROGQ1=Q1
 
-all:
-	u1 q1
+all: u1 q1
 
 u1:
 	$(CC) $(CFLAGS) -o $(PROGU1) $(SRCSU1)

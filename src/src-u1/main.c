@@ -4,7 +4,11 @@
 #include <fcntl.h>
 #include <pthread.h>
 
+#include "parsing.h"
+
 int main(int argc, char* argv[]) {
+    struct CmdArgs args = parseArgs(argc, argv);
+
     int publicFD;
     char fifoName[] = "fifo"; // TODO: get fifoname from command line argument parsing
 

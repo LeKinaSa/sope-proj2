@@ -1,11 +1,11 @@
 CC=gcc
 
 # Compiler flags
-CFLAGS=-Wall -Wextra -pedantic -pthread
+CFLAGS=-Wall -Wextra -pedantic -pthread -Ishared/
 
 # Source files
-SRCSU1=$(wildcard src-u1/*.c)
-SRCSQ1=$(wildcard src-q1/*.c)
+SRCSU1=$(wildcard src-u1/*.c shared/*.c)
+SRCSQ1=$(wildcard src-q1/*.c shared/*.c)
 
 # Targets
 PROGU1=U1

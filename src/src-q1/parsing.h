@@ -4,15 +4,13 @@
 #include <stdbool.h>
 
 /**
- * @brief All the cmd and envp arguments in one place
- *
- * If a bool is true, it means that option was set (e.g. countLinks is always true)
+ * @brief All the cmd arguments in one place
  */
 typedef struct CmdArgs {
-    char *fifoname; /** The FIFO path */
-    unsigned int nSecs; /** The lifetime of the program*/
-    unsigned int nPlaces; /** The number of places */
-    unsigned int nThreads; /** maximum number of threads */
+    char *fifoname;         /** The FIFO path */
+    unsigned int nSecs;     /** The lifetime of the program */
+    unsigned int nPlaces;   /** The number of places */
+    unsigned int nThreads;  /** Maximum number of threads */
 } CmdArgs;
 
 /**

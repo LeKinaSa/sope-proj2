@@ -113,13 +113,16 @@ int main(int argc, char* argv[]) {
 
     if (close(publicFD) < 0) {
         perror("close");
-        unlink(args.fifoname);
+        if (!timeout)
+            unlink(args.fifoname);
         return 1;
     }
 
-    if (unlink(args.fifoname) < 0) {
-        perror("unlink");
-        return 1;
+    if (!timeout) {
+        if (unlink(args.fifoname) < 0) {
+            perror("unlink");
+            return 1;
+        }
     }
 
     return 0;

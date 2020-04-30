@@ -16,6 +16,9 @@
 static bool timeout = false;
 static CmdArgs args;
 
+static int place = 1;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
 
@@ -32,11 +35,16 @@ void* threadFunc(void* arg) {
     } while (privateFD < 0);
     
     Message response;
+    
     response.i = requestPtr->i;
     response.pid = getpid();
     response.tid = pthread_self();
     response.dur = requestPtr->dur;
-    response.pl = -1;
+
+    // Critical section
+    pthread_mutex_lock(&mutex);
+    response.pl = place++;
+    pthread_mutex_unlock(&mutex);
 
     write(privateFD, &response, sizeof(Message));
     close(privateFD);

@@ -34,7 +34,7 @@ void* threadFunc(void* arg) {
     request.dur = rand() % MAX_DURATION;
     write(publicFD, &request, sizeof(Message));
     pthread_mutex_unlock(&messageInitLock);
-
+/*
     char privateFifoName[128];
     int privateFD;
 
@@ -46,10 +46,8 @@ void* threadFunc(void* arg) {
 
     read(privateFD, &response, sizeof(Message));
 
-    logOperation(&response, CLIENT_USING_BATHROOM);
-
     close(privateFD);
-    unlink(privateFifoName);
+    unlink(privateFifoName);*/
 
     return NULL;
 }

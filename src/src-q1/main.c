@@ -2,6 +2,7 @@
 
 #include "communication.h"
 #include "parsing.h"
+#include "logging.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -21,7 +22,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
-
+/*
     char privateFifoName[128];
     sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
 
@@ -46,7 +47,7 @@ void* threadFunc(void* arg) {
 
     write(privateFD, &response, sizeof(Message));
     close(privateFD);
-
+*/
     usleep(requestPtr->dur * MILLI_TO_MICRO);
 
     // Memory for the message is dynamically allocated; we must free it
@@ -96,6 +97,8 @@ int main(int argc, char* argv[]) {
 
     size_t numThreads = 0;
     while (read(publicFD, &message, sizeof(Message)) > 0) {
+        printMessage(&message);
+
         Message* requestPtr = malloc(sizeof(Message));
         memcpy(requestPtr, &message, sizeof(Message));
 

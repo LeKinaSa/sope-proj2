@@ -22,8 +22,6 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
 
-    printf("%lu\n", requestPtr->i);
-
     char privateFifoName[128];
     sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
 
@@ -73,6 +71,8 @@ void registerHandler() {
 
 int main(int argc, char* argv[]) {
     args = parseArgs(argc, argv);
+    registerHandler();
+
     int publicFD;
 
     pthread_t threadIds[512];
@@ -89,6 +89,8 @@ int main(int argc, char* argv[]) {
         unlink(args.fifoname);
         return 1;
     }
+
+    alarm(args.nSecs);
 
     Message message;
 

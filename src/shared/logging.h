@@ -1,0 +1,20 @@
+#ifndef LOGGING_H
+#define LOGGING_H
+
+#include "communication.h"
+
+typedef enum {
+    CLIENT_INITIAL_REQUEST,
+    SERVER_RECEIVED_REQUEST,
+    SERVER_ACCEPTED_REQUEST,
+    CLIENT_USING_BATHROOM,
+    SERVER_REQUEST_TIME_UP,
+    SERVER_REJECTED_REQUEST_BATHROOM_CLOSED,
+    CLIENT_RECEIVED_INFO_BATHROOM_CLOSED,
+    CLIENT_CANNOT_GET_RESPONSE,
+    SERVER_CANNOT_SEND_RESPONSE
+} Operation;
+
+void logOperation(const Message* message, Operation op);
+
+#endif // LOGGING_H

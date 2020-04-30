@@ -2,6 +2,7 @@
 
 #include "communication.h"
 #include "parsing.h"
+#include "logging.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -31,9 +32,8 @@ void* threadFunc(void* arg) {
     pthread_mutex_lock(&messageInitLock);
     request.i = requestNum++;
     request.dur = rand() % MAX_DURATION;
-    pthread_mutex_unlock(&messageInitLock);
-
     write(publicFD, &request, sizeof(Message));
+    pthread_mutex_unlock(&messageInitLock);
 
     char privateFifoName[128];
     int privateFD;
@@ -45,6 +45,8 @@ void* threadFunc(void* arg) {
     privateFD = open(privateFifoName, O_RDONLY);
 
     read(privateFD, &response, sizeof(Message));
+
+    logOperation(&response, CLIENT_USING_BATHROOM);
 
     close(privateFD);
     unlink(privateFifoName);

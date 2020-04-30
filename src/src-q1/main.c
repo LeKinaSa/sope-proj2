@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 700   // Allows usage of some GNU/Linux standard functions and structures
+#define _DEFAULT_SOURCE     // Allows usage of some GNU/Linux standard functions and structures
 
 #include "communication.h"
 #include "parsing.h"
@@ -6,25 +6,68 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/signal.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+static bool timeout = false;
+static CmdArgs args;
 
 void* threadFunc(void* arg) {
-    Message* messagePtr = (Message*) arg;
-    char privateFifoName[128];
-    sprintf(privateFifoName, "/tmp/%d.%lu", messagePtr->pid, messagePtr->tid);
+    Message* requestPtr = (Message*) arg;
 
-    // TODO: Validation
-    int privateFD = open(privateFifoName, O_WRONLY);
+    printf("%lu\n", requestPtr->i);
+
+    char privateFifoName[128];
+    sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
+
+    int privateFD;
+
+    do {
+        privateFD = open(args.fifoname, O_WRONLY);
+        if (privateFD < 0) usleep(MILLI_TO_MICRO);
+    } while (privateFD < 0);
     
+    Message response;
+    response.i = requestPtr->i;
+    response.pid = getpid();
+    response.tid = pthread_self();
+    response.dur = requestPtr->dur;
+    response.pl = -1;
+
+    write(privateFD, &response, sizeof(Message));
+    close(privateFD);
+
+    usleep(requestPtr->dur * MILLI_TO_MICRO);
+
+    // Memory for the message is dynamically allocated; we must free it
+    free(arg);
 
     return NULL;
 }
 
+void sigHandler(int signo) {
+    timeout = true;
+    unlink(args.fifoname); // TODO: Validation
+}
+
+void registerHandler() {
+    struct sigaction action;
+
+    action.sa_flags = 0;
+    action.sa_handler = sigHandler;
+
+    sigaction(SIGALRM, &action, NULL);
+}
+
 int main(int argc, char* argv[]) {
-    CmdArgs args = parseArgs(argc, argv);
+    args = parseArgs(argc, argv);
     int publicFD;
+
+    pthread_t threadIds[512];
 
     if (mkfifo(args.fifoname, 0660) < 0) {
         perror("mkfifo");
@@ -39,11 +82,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    Message* message = malloc(sizeof(Message));
+    Message message;
 
-    while (read(publicFD, message, sizeof(Message)) > 0) {
-        printMessage(message);
-        printf("\n");
+    size_t numThreads = 0;
+    while (read(publicFD, &message, sizeof(Message)) > 0) {
+        Message* requestPtr = malloc(sizeof(Message));
+        memcpy(requestPtr, &message, sizeof(Message));
+
+        // TODO: Refactor?
+        if (numThreads < 512)
+            pthread_create(&threadIds[numThreads++], NULL, threadFunc, requestPtr);
+    }
+
+    for (size_t i = 0; i < numThreads; ++i) {
+        pthread_join(threadIds[i], NULL);
     }
 
     if (close(publicFD) < 0) {

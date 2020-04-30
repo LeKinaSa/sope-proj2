@@ -1,6 +1,7 @@
 #define _DEFAULT_SOURCE
 
 #include "communication.h"
+#include "parsing.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -8,16 +9,19 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <signal.h>
 
 #define MAX_DURATION    200
+#define MAX_THREADS     512
 
-static size_t requestNum = 0;
+static bool timeout = false;
+static size_t requestNum = 1;
 static int publicFD;
 static pthread_mutex_t messageInitLock = PTHREAD_MUTEX_INITIALIZER;
 
+
 void* threadFunc(void* arg) {
-    Message request;
-    Message response;
+    Message request, response;
     
     request.pid = getpid();
     request.tid = pthread_self();
@@ -48,26 +52,43 @@ void* threadFunc(void* arg) {
     return NULL;
 }
 
-#include "parsing.h"
+void sigHandler(int signo) {
+    timeout = true;
+}
+
+void registerHandler() {
+    struct sigaction action;
+
+    action.sa_flags = 0;
+    action.sa_handler = sigHandler;
+
+    sigaction(SIGALRM, &action, NULL);
+}
 
 int main(int argc, char* argv[]) {
     CmdArgs args = parseArgs(argc, argv);
-    pthread_t threadIds[32];
+
+    registerHandler();
+
+    pthread_t threadIds[MAX_THREADS];
 
     srand(time(NULL));
 
     // Open FIFO for requests to the server
     do {
         publicFD = open(args.fifoname, O_WRONLY);
-        if (publicFD < 0) sleep(1);
+        if (publicFD < 0) usleep(100 * MILLI_TO_MICRO);
     } while (publicFD < 0);
 
-    for (size_t i = 0; i < 32; ++i) {
-        pthread_create(&threadIds[i], NULL, threadFunc, NULL);
+    alarm(args.nSecs);
+
+    size_t numThreads;
+    for (numThreads = 0; numThreads < MAX_THREADS && !timeout; ++numThreads) {
+        pthread_create(&threadIds[numThreads], NULL, threadFunc, NULL);
         usleep(5 * MILLI_TO_MICRO);
     }
 
-    for (size_t i = 0; i < 32; ++i) {
+    for (size_t i = 0; i < numThreads; ++i) {
         pthread_join(threadIds[i], NULL);
     }
 

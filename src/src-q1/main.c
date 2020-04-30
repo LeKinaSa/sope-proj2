@@ -22,14 +22,16 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
-/*
+
+    logOperation(requestPtr, SERVER_RECEIVED_REQUEST);
+
     char privateFifoName[128];
     sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
 
     int privateFD;
 
     do {
-        privateFD = open(args.fifoname, O_WRONLY);
+        privateFD = open(privateFifoName, O_WRONLY);
         if (privateFD < 0) usleep(MILLI_TO_MICRO);
     } while (privateFD < 0);
     
@@ -47,7 +49,7 @@ void* threadFunc(void* arg) {
 
     write(privateFD, &response, sizeof(Message));
     close(privateFD);
-*/
+
     usleep(requestPtr->dur * MILLI_TO_MICRO);
 
     // Memory for the message is dynamically allocated; we must free it
@@ -97,8 +99,6 @@ int main(int argc, char* argv[]) {
 
     size_t numThreads = 0;
     while (read(publicFD, &message, sizeof(Message)) > 0) {
-        printMessage(&message);
-
         Message* requestPtr = malloc(sizeof(Message));
         memcpy(requestPtr, &message, sizeof(Message));
 

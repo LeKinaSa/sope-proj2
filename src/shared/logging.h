@@ -3,7 +3,7 @@
 
 #include "communication.h"
 
-typedef enum {
+typedef enum Operation {
     CLIENT_INITIAL_REQUEST,
     SERVER_RECEIVED_REQUEST,
     SERVER_ACCEPTED_REQUEST,

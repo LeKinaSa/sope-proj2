@@ -40,17 +40,19 @@ void* threadFunc(void* arg) {
     response.i = requestPtr->i;
     response.pid = getpid();
     response.tid = pthread_self();
-    response.dur = requestPtr->dur;
+    response.dur = timeout ? -1 : requestPtr->dur;
 
     // Critical section
     pthread_mutex_lock(&mutex);
-    response.pl = place++;
+    response.pl = timeout ? -1 : place++;
     pthread_mutex_unlock(&mutex);
 
     write(privateFD, &response, sizeof(Message));
     close(privateFD);
 
     usleep(requestPtr->dur * MILLI_TO_MICRO);
+
+    logOperation(requestPtr, SERVER_REQUEST_TIME_UP);
 
     // Memory for the message is dynamically allocated; we must free it
     free(arg);

@@ -46,7 +46,10 @@ void* threadFunc(void* arg) {
     mkfifo(privateFifoName, 0660);
     privateFD = open(privateFifoName, O_RDONLY);
 
-    read(privateFD, &response, sizeof(Message));
+    int readSize = read(privateFD, &response, sizeof(Message));
+    if (readSize <= 0) {
+        logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
+    }
 
     close(privateFD);
     unlink(privateFifoName);

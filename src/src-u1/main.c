@@ -45,8 +45,17 @@ void* threadFunc(void* arg) {
     // TODO: Function return validation
 
     sprintf(privateFifoName, "/tmp/%d.%lu", request.pid, request.tid);
-    mkfifo(privateFifoName, 0660);
-    privateFD = open(privateFifoName, O_RDONLY);
+    
+    if (mkfifo(privateFifoName, 0660) < 0) {
+        perror("mkfifo");
+        return NULL;
+    }
+    
+    if ((privateFD = open(privateFifoName, O_RDONLY)) < 0) {
+        perror("open");
+        unlink(privateFifoName);
+        return NULL;
+    }
 
     ssize_t readSize = read(privateFD, &response, sizeof(Message));
     if (readSize <= 0) {
@@ -60,13 +69,19 @@ void* threadFunc(void* arg) {
         logOperation(&response, CLIENT_USING_BATHROOM);
     }
 
-    close(privateFD);
-    unlink(privateFifoName);
+    if (close(privateFD) < 0) {
+        perror("close");
+    }
+    
+    if (unlink(privateFifoName) < 0) {
+        perror("unlink");
+    }
 
     return NULL;
 }
 
 void sigHandler(int signo) {
+    fprintf(stderr, "ALARM U1 LOL XD\n");
     timeout = true;
 }
 

@@ -13,7 +13,6 @@
 #include <signal.h>
 
 #define MAX_DURATION    200
-#define MAX_THREADS     512
 
 static bool timeout = false;
 static size_t requestNum = 1;

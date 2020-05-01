@@ -1,8 +1,8 @@
 #define _DEFAULT_SOURCE
 
-#include "communication.h"
+#include "../shared/communication.h"
 #include "parsing.h"
-#include "logging.h"
+#include "../shared/logging.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -35,6 +35,8 @@ void* threadFunc(void* arg) {
     write(publicFD, &request, sizeof(Message));
     pthread_mutex_unlock(&messageInitLock);
 
+    logOperation(&request, CLIENT_INITIAL_REQUEST);
+
     char privateFifoName[128];
     int privateFD;
 
@@ -44,7 +46,13 @@ void* threadFunc(void* arg) {
     mkfifo(privateFifoName, 0660);
     privateFD = open(privateFifoName, O_RDONLY);
 
-    read(privateFD, &response, sizeof(Message));
+    int readSize = read(privateFD, &response, sizeof(Message));
+    if (readSize <= 0) {
+        logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
+    }
+    if ((response.dur == -1) && (response.pl == -1)) {
+        logOperation(&response, CLIENT_RECEIVED_INFO_BATHROOM_CLOSED);
+    }
 
     close(privateFD);
     unlink(privateFifoName);

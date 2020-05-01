@@ -32,7 +32,9 @@ void* threadFunc(void* arg) {
     pthread_mutex_lock(&messageInitLock);
     request.i = requestNum++;
     request.dur = rand() % MAX_DURATION;
-    write(publicFD, &request, sizeof(Message));
+    if (write(publicFD, &request, sizeof(Message)) < 0) {
+        perror("write");
+    } 
     pthread_mutex_unlock(&messageInitLock);
 
     logOperation(&request, CLIENT_INITIAL_REQUEST);
@@ -46,12 +48,16 @@ void* threadFunc(void* arg) {
     mkfifo(privateFifoName, 0660);
     privateFD = open(privateFifoName, O_RDONLY);
 
-    int readSize = read(privateFD, &response, sizeof(Message));
+    ssize_t readSize = read(privateFD, &response, sizeof(Message));
     if (readSize <= 0) {
         logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
     }
+    
     if ((response.dur == -1) && (response.pl == -1)) {
         logOperation(&response, CLIENT_RECEIVED_INFO_BATHROOM_CLOSED);
+    }
+    else {
+        logOperation(&response, CLIENT_USING_BATHROOM);
     }
 
     close(privateFD);
@@ -93,8 +99,6 @@ int main(int argc, char* argv[]) {
         pthread_create(&threadId, NULL, threadFunc, NULL);
         usleep(5 * MILLI_TO_MICRO);
     }
-
-    close(publicFD);
 
     pthread_exit(NULL);
 }

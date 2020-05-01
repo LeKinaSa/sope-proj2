@@ -37,7 +37,7 @@ void* threadFunc(void* arg) {
         ++iterations;
         if (iterations == MAX_ITERATIONS) {
             logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
-            break;
+            return NULL;
         }
     } while (privateFD < 0);
 
@@ -57,9 +57,14 @@ void* threadFunc(void* arg) {
     write(privateFD, &response, sizeof(Message));
     close(privateFD);
 
-    usleep(requestPtr->dur * MILLI_TO_MICRO);
-
-    logOperation(requestPtr, SERVER_REQUEST_TIME_UP);
+    if (!timeout) {
+        logOperation(requestPtr, SERVER_ACCEPTED_REQUEST);
+        usleep(requestPtr->dur * MILLI_TO_MICRO);
+        logOperation(requestPtr, SERVER_REQUEST_TIME_UP);
+    }
+    else {
+        logOperation(requestPtr, SERVER_REJECTED_REQUEST_BATHROOM_CLOSED);
+    }
 
     // Memory for the message is dynamically allocated; we must free it
     free(arg);
@@ -69,7 +74,10 @@ void* threadFunc(void* arg) {
 
 void sigHandler(int signo) {
     timeout = true;
-    unlink(args.fifoname); // TODO: Validation
+
+    if (unlink(args.fifoname) < 0) {
+        perror("unlink");
+    }
 }
 
 void registerHandler() {

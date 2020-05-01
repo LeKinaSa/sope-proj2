@@ -44,7 +44,8 @@ void* threadFunc(void* arg) {
 
     // Critical section
     pthread_mutex_lock(&mutex);
-    response.pl = timeout ? -1 : place++;
+    response.pl = timeout ? -1 : place;
+    ++place;
     pthread_mutex_unlock(&mutex);
 
     write(privateFD, &response, sizeof(Message));
@@ -80,8 +81,6 @@ int main(int argc, char* argv[]) {
 
     int publicFD;
 
-    pthread_t threadIds[512];
-
     if (mkfifo(args.fifoname, 0660) < 0) {
         perror("mkfifo");
         return 1;
@@ -99,33 +98,26 @@ int main(int argc, char* argv[]) {
 
     Message message;
 
-    size_t numThreads = 0;
+    pthread_t threadId;
     while (read(publicFD, &message, sizeof(Message)) > 0) {
         Message* requestPtr = malloc(sizeof(Message));
         memcpy(requestPtr, &message, sizeof(Message));
 
-        // TODO: Refactor?
-        if (numThreads < 512)
-            pthread_create(&threadIds[numThreads++], NULL, threadFunc, requestPtr);
-    }
-
-    for (size_t i = 0; i < numThreads; ++i) {
-        pthread_join(threadIds[i], NULL);
+        pthread_create(&threadId, NULL, threadFunc, requestPtr);
     }
 
     if (close(publicFD) < 0) {
         perror("close");
-        if (!timeout)
+        if (!timeout) {
             unlink(args.fifoname);
-        return 1;
+        }
     }
 
     if (!timeout) {
         if (unlink(args.fifoname) < 0) {
             perror("unlink");
-            return 1;
         }
     }
 
-    return 0;
+    pthread_exit(NULL);
 }

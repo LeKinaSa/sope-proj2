@@ -70,8 +70,6 @@ int main(int argc, char* argv[]) {
 
     registerHandler();
 
-    pthread_t threadIds[MAX_THREADS];
-
     srand(time(NULL));
 
     // Open FIFO for requests to the server
@@ -82,17 +80,13 @@ int main(int argc, char* argv[]) {
 
     alarm(args.nSecs);
 
-    size_t numThreads;
-    for (numThreads = 0; numThreads < MAX_THREADS && !timeout; ++numThreads) {
-        pthread_create(&threadIds[numThreads], NULL, threadFunc, NULL);
+    pthread_t threadId;
+    while (!timeout) {
+        pthread_create(&threadId, NULL, threadFunc, NULL);
         usleep(5 * MILLI_TO_MICRO);
-    }
-
-    for (size_t i = 0; i < numThreads; ++i) {
-        pthread_join(threadIds[i], NULL);
     }
 
     close(publicFD);
 
-    return 0;
+    pthread_exit(NULL);
 }

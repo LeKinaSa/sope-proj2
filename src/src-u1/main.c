@@ -1,8 +1,8 @@
 #define _DEFAULT_SOURCE
 
-#include "communication.h"
+#include "../shared/communication.h"
 #include "parsing.h"
-#include "logging.h"
+#include "../shared/logging.h"
 
 #include <unistd.h>
 #include <sys/types.h>

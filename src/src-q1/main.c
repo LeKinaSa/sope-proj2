@@ -29,12 +29,18 @@ void* threadFunc(void* arg) {
     sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
 
     int privateFD;
-
+    const int MAX_ITERATIONS = 5;
+    int iterations = 0;
     do {
         privateFD = open(privateFifoName, O_WRONLY);
         if (privateFD < 0) usleep(MILLI_TO_MICRO);
+        ++iterations;
+        if (iterations == MAX_ITERATIONS) {
+            logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
+            break;
+        }
     } while (privateFD < 0);
-    
+
     Message response;
     
     response.i = requestPtr->i;

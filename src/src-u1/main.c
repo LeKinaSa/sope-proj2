@@ -35,6 +35,8 @@ void* threadFunc(void* arg) {
     write(publicFD, &request, sizeof(Message));
     pthread_mutex_unlock(&messageInitLock);
 
+    logOperation(&request, CLIENT_INITIAL_REQUEST);
+
     char privateFifoName[128];
     int privateFD;
 

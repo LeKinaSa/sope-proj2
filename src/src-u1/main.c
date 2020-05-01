@@ -42,8 +42,6 @@ void* threadFunc(void* arg) {
     char privateFifoName[128];
     int privateFD;
 
-    // TODO: Function return validation
-
     sprintf(privateFifoName, "/tmp/%d.%lu", request.pid, request.tid);
     
     if (mkfifo(privateFifoName, 0660) < 0) {
@@ -81,7 +79,6 @@ void* threadFunc(void* arg) {
 }
 
 void sigHandler(int signo) {
-    fprintf(stderr, "ALARM U1 LOL XD\n");
     timeout = true;
 }
 

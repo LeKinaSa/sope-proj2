@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+#include <errno.h>
 
 static bool timeout = false;
 static CmdArgs args;
@@ -113,11 +114,26 @@ int main(int argc, char* argv[]) {
     Message message;
 
     pthread_t threadId;
-    while (read(publicFD, &message, sizeof(Message)) > 0) {
-        Message* requestPtr = malloc(sizeof(Message));
-        memcpy(requestPtr, &message, sizeof(Message));
+    ssize_t bytesRead;
+    while (true) {
+        bytesRead = read(publicFD, &message, sizeof(Message));
 
-        pthread_create(&threadId, NULL, threadFunc, requestPtr);
+        if (bytesRead == 0) {
+            // EOF
+            break;
+        }
+        else if (bytesRead < 0) {
+            if (errno != EINTR) {
+                // Error not related to SIGALRM (write end closed)
+                break;
+            }
+        }
+        else {
+            Message* requestPtr = malloc(sizeof(Message));
+            memcpy(requestPtr, &message, sizeof(Message));
+
+            pthread_create(&threadId, NULL, threadFunc, requestPtr);
+        }
     }
 
     if (close(publicFD) < 0) {

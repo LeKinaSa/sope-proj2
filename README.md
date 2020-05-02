@@ -8,6 +8,7 @@ Second project of the Operating Systems curricular unit.
 ## Implemented features
 * Command line argument parsing
 * Thread creation in order to deal with bathroom requests
+* Complete logging of `IWANT`, `RECVD`, `ENTER`, `IAMIN`, `TIMUP`, `2LATE`, `CLOSD` and `GAVUP`.
 
 ## Features that don't work
 * 

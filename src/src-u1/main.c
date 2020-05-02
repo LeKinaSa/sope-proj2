@@ -1,7 +1,8 @@
 #define _DEFAULT_SOURCE
 
-#include "communication.h"
+#include "../shared/communication.h"
 #include "parsing.h"
+#include "../shared/logging.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -12,7 +13,6 @@
 #include <signal.h>
 
 #define MAX_DURATION    200
-#define MAX_THREADS     512
 
 static bool timeout = false;
 static size_t requestNum = 1;
@@ -31,23 +31,48 @@ void* threadFunc(void* arg) {
     pthread_mutex_lock(&messageInitLock);
     request.i = requestNum++;
     request.dur = rand() % MAX_DURATION;
+    if (write(publicFD, &request, sizeof(Message)) < 0) {
+        perror("write");
+    } 
     pthread_mutex_unlock(&messageInitLock);
 
-    write(publicFD, &request, sizeof(Message));
+    logOperation(&request, CLIENT_INITIAL_REQUEST);
 
     char privateFifoName[128];
     int privateFD;
 
-    // TODO: Function return validation
-
     sprintf(privateFifoName, "/tmp/%d.%lu", request.pid, request.tid);
-    mkfifo(privateFifoName, 0660);
-    privateFD = open(privateFifoName, O_RDONLY);
+    
+    if (mkfifo(privateFifoName, 0660) < 0) {
+        perror("mkfifo");
+        return NULL;
+    }
+    
+    if ((privateFD = open(privateFifoName, O_RDONLY)) < 0) {
+        perror("open");
+        unlink(privateFifoName);
+        return NULL;
+    }
 
-    read(privateFD, &response, sizeof(Message));
+    ssize_t readSize = read(privateFD, &response, sizeof(Message));
+    if (readSize <= 0) {
+        logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
+    }
+    
+    if ((response.dur == -1) && (response.pl == -1)) {
+        logOperation(&response, CLIENT_RECEIVED_INFO_BATHROOM_CLOSED);
+    }
+    else {
+        logOperation(&response, CLIENT_USING_BATHROOM);
+    }
 
-    close(privateFD);
-    unlink(privateFifoName);
+    if (close(privateFD) < 0) {
+        perror("close");
+    }
+    
+    if (unlink(privateFifoName) < 0) {
+        perror("unlink");
+    }
 
     return NULL;
 }
@@ -70,8 +95,6 @@ int main(int argc, char* argv[]) {
 
     registerHandler();
 
-    pthread_t threadIds[MAX_THREADS];
-
     srand(time(NULL));
 
     // Open FIFO for requests to the server
@@ -82,17 +105,11 @@ int main(int argc, char* argv[]) {
 
     alarm(args.nSecs);
 
-    size_t numThreads;
-    for (numThreads = 0; numThreads < MAX_THREADS && !timeout; ++numThreads) {
-        pthread_create(&threadIds[numThreads], NULL, threadFunc, NULL);
+    pthread_t threadId;
+    while (!timeout) {
+        pthread_create(&threadId, NULL, threadFunc, NULL);
         usleep(5 * MILLI_TO_MICRO);
     }
 
-    for (size_t i = 0; i < numThreads; ++i) {
-        pthread_join(threadIds[i], NULL);
-    }
-
-    close(publicFD);
-
-    return 0;
+    pthread_exit(NULL);
 }

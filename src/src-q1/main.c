@@ -1,7 +1,8 @@
 #define _DEFAULT_SOURCE     // Allows usage of some GNU/Linux standard functions and structures
 
-#include "communication.h"
+#include "../shared/communication.h"
 #include "parsing.h"
+#include "../shared/logging.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -12,6 +13,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+#include <errno.h>
 
 static bool timeout = false;
 static CmdArgs args;
@@ -22,34 +24,48 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
 
-    printf("%lu\n", requestPtr->i);
+    logOperation(requestPtr, SERVER_RECEIVED_REQUEST);
 
     char privateFifoName[128];
     sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
 
     int privateFD;
-
+    const int MAX_ITERATIONS = 5;
+    int iterations = 0;
     do {
-        privateFD = open(args.fifoname, O_WRONLY);
+        privateFD = open(privateFifoName, O_WRONLY);
         if (privateFD < 0) usleep(MILLI_TO_MICRO);
+        ++iterations;
+        if (iterations == MAX_ITERATIONS) {
+            logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
+            return NULL;
+        }
     } while (privateFD < 0);
-    
+
     Message response;
     
     response.i = requestPtr->i;
     response.pid = getpid();
     response.tid = pthread_self();
-    response.dur = requestPtr->dur;
+    response.dur = timeout ? -1 : requestPtr->dur;
 
     // Critical section
     pthread_mutex_lock(&mutex);
-    response.pl = place++;
+    response.pl = timeout ? -1 : place;
+    ++place;
     pthread_mutex_unlock(&mutex);
 
     write(privateFD, &response, sizeof(Message));
     close(privateFD);
 
-    usleep(requestPtr->dur * MILLI_TO_MICRO);
+    if (!timeout) {
+        logOperation(requestPtr, SERVER_ACCEPTED_REQUEST);
+        usleep(requestPtr->dur * MILLI_TO_MICRO);
+        logOperation(requestPtr, SERVER_REQUEST_TIME_UP);
+    }
+    else {
+        logOperation(requestPtr, SERVER_REJECTED_REQUEST_BATHROOM_CLOSED);
+    }
 
     // Memory for the message is dynamically allocated; we must free it
     free(arg);
@@ -59,7 +75,10 @@ void* threadFunc(void* arg) {
 
 void sigHandler(int signo) {
     timeout = true;
-    unlink(args.fifoname); // TODO: Validation
+
+    if (unlink(args.fifoname) < 0) {
+        perror("unlink");
+    }
 }
 
 void registerHandler() {
@@ -73,9 +92,9 @@ void registerHandler() {
 
 int main(int argc, char* argv[]) {
     args = parseArgs(argc, argv);
-    int publicFD;
+    registerHandler();
 
-    pthread_t threadIds[512];
+    int publicFD;
 
     if (mkfifo(args.fifoname, 0660) < 0) {
         perror("mkfifo");
@@ -90,32 +109,45 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    alarm(args.nSecs);
+
     Message message;
 
-    size_t numThreads = 0;
-    while (read(publicFD, &message, sizeof(Message)) > 0) {
-        Message* requestPtr = malloc(sizeof(Message));
-        memcpy(requestPtr, &message, sizeof(Message));
+    pthread_t threadId;
+    ssize_t bytesRead;
+    while (true) {
+        bytesRead = read(publicFD, &message, sizeof(Message));
 
-        // TODO: Refactor?
-        if (numThreads < 512)
-            pthread_create(&threadIds[numThreads++], NULL, threadFunc, requestPtr);
-    }
+        if (bytesRead == 0) {
+            // EOF
+            break;
+        }
+        else if (bytesRead < 0) {
+            if (errno != EINTR) {
+                // Error not related to SIGALRM (write end closed)
+                break;
+            }
+        }
+        else {
+            Message* requestPtr = malloc(sizeof(Message));
+            memcpy(requestPtr, &message, sizeof(Message));
 
-    for (size_t i = 0; i < numThreads; ++i) {
-        pthread_join(threadIds[i], NULL);
+            pthread_create(&threadId, NULL, threadFunc, requestPtr);
+        }
     }
 
     if (close(publicFD) < 0) {
         perror("close");
-        unlink(args.fifoname);
-        return 1;
+        if (!timeout) {
+            unlink(args.fifoname);
+        }
     }
 
-    if (unlink(args.fifoname) < 0) {
-        perror("unlink");
-        return 1;
+    if (!timeout) {
+        if (unlink(args.fifoname) < 0) {
+            perror("unlink");
+        }
     }
 
-    return 0;
+    pthread_exit(NULL);
 }

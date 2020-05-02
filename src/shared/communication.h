@@ -2,6 +2,7 @@
 #define COMMUNICATION_H
 
 #include <stdlib.h>
+#include <pthread.h>
 
 #define MILLI_TO_MICRO 1000
 

@@ -126,8 +126,12 @@ int main(int argc, char* argv[]) {
 
     pthread_t threadId;
     while (!timeout && !closed) {
-        pthread_create(&threadId, NULL, threadFunc, NULL);
-        pthread_detach(threadId);
+        if (pthread_create(&threadId, NULL, threadFunc, NULL) != 0) {
+            fprintf(stderr, "pthread_create failed in client\n");
+        }
+        else {
+            pthread_detach(threadId);
+        }
         usleep(THREAD_CREATION_INTERVAL * MILLI_TO_MICRO);
     }
 

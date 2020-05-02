@@ -116,8 +116,12 @@ int main(int argc, char* argv[]) {
             Message* requestPtr = malloc(sizeof(Message));
             memcpy(requestPtr, &message, sizeof(Message));
 
-            pthread_create(&threadId, NULL, threadFunc, requestPtr);
-            pthread_detach(threadId);
+            if (pthread_create(&threadId, NULL, threadFunc, requestPtr) != 0) {
+                fprintf(stderr, "pthread_create failed in server\n");
+            }
+            else {
+                pthread_detach(threadId);
+            }
         }
         else if (timeout && bytesRead == 0) {
             break;

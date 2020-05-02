@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#define MAX_DURATION                200
+#define MAX_DURATION                100
 #define THREAD_CREATION_INTERVAL    5
 
 static bool timeout = false;

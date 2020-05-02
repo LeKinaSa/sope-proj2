@@ -116,20 +116,10 @@ int main(int argc, char* argv[]) {
 
     pthread_t threadId;
     ssize_t bytesRead;
-    while (true) {
+    while (!timeout) {
         bytesRead = read(publicFD, &message, sizeof(Message));
 
-        if (bytesRead == 0) {
-            // EOF
-            break;
-        }
-        else if (bytesRead < 0) {
-            if (errno != EINTR) {
-                // Error not related to SIGALRM (write end closed)
-                break;
-            }
-        }
-        else {
+        if (bytesRead > 0) {
             Message* requestPtr = malloc(sizeof(Message));
             memcpy(requestPtr, &message, sizeof(Message));
 

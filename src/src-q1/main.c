@@ -55,16 +55,21 @@ void* threadFunc(void* arg) {
     ++place;
     pthread_mutex_unlock(&mutex);
 
-    write(privateFD, &response, sizeof(Message));
-    close(privateFD);
+    if (write(privateFD, &response, sizeof(Message)) < 0) {
+        logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
+    }
+    
+    if (close(privateFD) < 0) {
+        perror("close");
+    }
 
     if (!timeout) {
-        logOperation(requestPtr, SERVER_ACCEPTED_REQUEST);
+        logOperation(&response, SERVER_ACCEPTED_REQUEST);
         usleep(requestPtr->dur * MILLI_TO_MICRO);
-        logOperation(requestPtr, SERVER_REQUEST_TIME_UP);
+        logOperation(&response, SERVER_REQUEST_TIME_UP);
     }
     else {
-        logOperation(requestPtr, SERVER_REJECTED_REQUEST_BATHROOM_CLOSED);
+        logOperation(&response, SERVER_REJECTED_REQUEST_BATHROOM_CLOSED);
     }
 
     // Memory for the message is dynamically allocated; we must free it
@@ -75,10 +80,6 @@ void* threadFunc(void* arg) {
 
 void sigHandler(int signo) {
     timeout = true;
-
-    if (unlink(args.fifoname) < 0) {
-        perror("unlink");
-    }
 }
 
 void registerHandler() {
@@ -133,20 +134,16 @@ int main(int argc, char* argv[]) {
             memcpy(requestPtr, &message, sizeof(Message));
 
             pthread_create(&threadId, NULL, threadFunc, requestPtr);
+            pthread_detach(threadId);
         }
     }
 
     if (close(publicFD) < 0) {
         perror("close");
-        if (!timeout) {
-            unlink(args.fifoname);
-        }
     }
 
-    if (!timeout) {
-        if (unlink(args.fifoname) < 0) {
-            perror("unlink");
-        }
+    if (unlink(args.fifoname) < 0) {
+        perror("unlink");
     }
 
     pthread_exit(NULL);

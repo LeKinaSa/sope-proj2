@@ -15,6 +15,7 @@
 #define MAX_DURATION    200
 
 static bool timeout = false;
+static bool closed = false;
 static size_t requestNum = 1;
 static int publicFD;
 static pthread_mutex_t messageInitLock = PTHREAD_MUTEX_INITIALIZER;
@@ -32,7 +33,10 @@ void* threadFunc(void* arg) {
     request.i = requestNum++;
     request.dur = rand() % MAX_DURATION;
     if (write(publicFD, &request, sizeof(Message)) < 0) {
+        closed = true;
         perror("write");
+        logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
+        return NULL;
     } 
     pthread_mutex_unlock(&messageInitLock);
 
@@ -60,6 +64,7 @@ void* threadFunc(void* arg) {
     }
     
     if ((response.dur == -1) && (response.pl == -1)) {
+        closed = true;
         logOperation(&response, CLIENT_RECEIVED_INFO_BATHROOM_CLOSED);
     }
     else {
@@ -106,8 +111,9 @@ int main(int argc, char* argv[]) {
     alarm(args.nSecs);
 
     pthread_t threadId;
-    while (!timeout) {
+    while (!timeout && !closed) {
         pthread_create(&threadId, NULL, threadFunc, NULL);
+        pthread_detach(threadId);
         usleep(5 * MILLI_TO_MICRO);
     }
 

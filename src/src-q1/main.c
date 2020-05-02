@@ -38,6 +38,7 @@ void* threadFunc(void* arg) {
         ++iterations;
         if (iterations == MAX_ITERATIONS) {
             logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
+            free(arg);
             return NULL;
         }
     } while (privateFD < 0);

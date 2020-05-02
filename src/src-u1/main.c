@@ -12,7 +12,8 @@
 #include <stdio.h>
 #include <signal.h>
 
-#define MAX_DURATION    200
+#define MAX_DURATION                200
+#define THREAD_CREATION_INTERVAL    5
 
 static bool timeout = false;
 static bool closed = false;
@@ -127,7 +128,7 @@ int main(int argc, char* argv[]) {
     while (!timeout && !closed) {
         pthread_create(&threadId, NULL, threadFunc, NULL);
         pthread_detach(threadId);
-        usleep(5 * MILLI_TO_MICRO);
+        usleep(THREAD_CREATION_INTERVAL * MILLI_TO_MICRO);
     }
 
     pthread_exit(NULL);

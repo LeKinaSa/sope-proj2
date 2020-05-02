@@ -83,6 +83,17 @@ void* threadFunc(void* arg) {
 }
 
 void sigHandler(int signo) {
+    switch (signo) {
+        case SIGALRM:
+            timeout = true;
+            break;
+        case SIGPIPE:
+            closed = true;
+            break;
+        default:
+            break;
+    }
+
     timeout = true;
 }
 
@@ -93,6 +104,7 @@ void registerHandler() {
     action.sa_handler = sigHandler;
 
     sigaction(SIGALRM, &action, NULL);
+    sigaction(SIGPIPE, &action, NULL);
 }
 
 int main(int argc, char* argv[]) {

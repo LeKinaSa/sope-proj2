@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     pthread_t threadId;
     ssize_t bytesRead;
-    while (!timeout) {
+    while (true) {
         bytesRead = read(publicFD, &message, sizeof(Message));
 
         if (bytesRead > 0) {
@@ -125,6 +125,9 @@ int main(int argc, char* argv[]) {
 
             pthread_create(&threadId, NULL, threadFunc, requestPtr);
             pthread_detach(threadId);
+        }
+        else if (timeout && bytesRead == 0) {
+            break;
         }
     }
 

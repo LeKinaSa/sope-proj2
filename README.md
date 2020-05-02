@@ -5,9 +5,13 @@ Second project of the Operating Systems curricular unit.
 * Daniel Monteiro (up201806185)
 * Gonçalo Pascoal (up201806332)
 
-## Code Style
-When contributing to the project, please follow these guidelines:
-- Use `camelCase` for **function and variable names**
-- Use `PascalCase` for **struct and enum names**
-- Use `ALL_CAPS_SNAKE_CASE` for **constant variable names and enum entries**
-- Don't forget include guards (`#ifndef ...`) in header files
+## Implemented features
+* Command line argument parsing
+* Thread creation in order to deal with bathroom requests
+
+## Features that don't work
+* 
+
+## Relevant details
+* All the threads run detached from the main thread so that we can have almost infinite threads.
+* 

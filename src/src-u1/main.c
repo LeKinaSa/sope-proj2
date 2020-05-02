@@ -62,13 +62,14 @@ void* threadFunc(void* arg) {
     if (readSize <= 0) {
         logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
     }
-    
-    if ((response.dur == -1) && (response.pl == -1)) {
-        closed = true;
-        logOperation(&response, CLIENT_RECEIVED_INFO_BATHROOM_CLOSED);
-    }
     else {
-        logOperation(&response, CLIENT_USING_BATHROOM);
+        if ((response.dur == -1) && (response.pl == -1)) {
+            closed = true;
+            logOperation(&response, CLIENT_RECEIVED_INFO_BATHROOM_CLOSED);
+        }
+        else {
+            logOperation(&response, CLIENT_USING_BATHROOM);
+        }
     }
 
     if (close(privateFD) < 0) {

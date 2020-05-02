@@ -11,7 +11,7 @@ First part of the second project of the Operating Systems curricular unit.
 * Logging of `IWANT`, `RECVD`, `ENTER`, `IAMIN`, `TIMUP`, `2LATE`, `CLOSD` and `GAVUP` and `FAILD`.
 
 ## Features that don't work
-* Some unexpected behaviour may occur when using high values for the `nsecs` argument.
+* Some unexpected behaviour may occur when using very high values for the `nsecs` argument.
 * If the server can’t open the client FIFO, the client thread may get stuck in the read function call.
 
 ## Relevant details

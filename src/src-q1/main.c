@@ -32,7 +32,7 @@ void* threadFunc(void* arg) {
     int privateFD;
     do {
         privateFD = open(privateFifoName, O_WRONLY);
-        if (privateFD < 0) usleep(MILLI_TO_MICRO);
+        if (privateFD < 0) usleep(MILLI_TO_MICRO); //Tenta 5 ou 6 vezes, depois dar GAVEUP
     } while (privateFD < 0);
 
     Message response;
@@ -73,6 +73,9 @@ void* threadFunc(void* arg) {
 
 void sigHandler(int signo) {
     timeout = true;
+    if (unlink(args.fifoname) < 0) {
+        perror("unlink");
+    }
 }
 
 void registerHandler() {
@@ -130,10 +133,6 @@ int main(int argc, char* argv[]) {
 
     if (close(publicFD) < 0) {
         perror("close");
-    }
-
-    if (unlink(args.fifoname) < 0) {
-        perror("unlink");
     }
 
     pthread_exit(NULL);

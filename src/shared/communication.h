@@ -18,6 +18,10 @@ typedef struct Message {
     int pl;         /** Place number, -1 for requests or for responses if access is denied */
 } Message;
 
+/**
+ * @brief Prints the contents of a Message struct to stdout.
+ * @param message   pointer to Message struct to print
+ */
 void printMessage(const Message* message);
 
 #endif // COMMUNICATION_H

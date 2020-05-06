@@ -30,10 +30,20 @@ void* threadFunc(void* arg) {
     sprintf(privateFifoName, "/tmp/%d.%lu", requestPtr->pid, requestPtr->tid);
 
     int privateFD;
+    static const ushort MAX_ATTEMPTS = 8;
+    ushort numAttempts = 0;
+
     do {
         privateFD = open(privateFifoName, O_WRONLY);
-        if (privateFD < 0) usleep(MILLI_TO_MICRO); //Tenta 5 ou 6 vezes, depois dar GAVEUP
-    } while (privateFD < 0);
+        if (privateFD < 0) usleep(MILLI_TO_MICRO);
+        ++numAttempts;
+    } while (privateFD < 0 && numAttempts < MAX_ATTEMPTS);
+
+    if (privateFD < 0) {
+        logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
+        free(arg);
+        return NULL;
+    }
 
     Message response;
     
@@ -73,6 +83,7 @@ void* threadFunc(void* arg) {
 
 void sigHandler(int signo) {
     timeout = true;
+
     if (unlink(args.fifoname) < 0) {
         perror("unlink");
     }
@@ -112,7 +123,7 @@ int main(int argc, char* argv[]) {
 
     pthread_t threadId;
     ssize_t bytesRead;
-    while (true) {
+    while (!(timeout && bytesRead == 0)) {
         bytesRead = read(publicFD, &message, sizeof(Message));
 
         if (bytesRead > 0) {
@@ -125,9 +136,6 @@ int main(int argc, char* argv[]) {
             else {
                 pthread_detach(threadId);
             }
-        }
-        else if (timeout && bytesRead == 0) {
-            break;
         }
     }
 

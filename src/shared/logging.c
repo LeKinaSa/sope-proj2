@@ -16,6 +16,6 @@ static const char* OP_CODES[] = {
 };
 
 void logOperation(const Message* message, Operation op) {
-    printf("%ld ; %lu ; %d; %lu ; %d ; %d ; %s\n", time(NULL), message->i, message->pid, message->tid, 
+    printf("%ld ; %lu ; %d ; %lu ; %d ; %d ; %s\n", time(NULL), message->i, message->pid, message->tid, 
             message->dur, message->pl, OP_CODES[op]);
 }

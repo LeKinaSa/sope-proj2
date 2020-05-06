@@ -10,3 +10,6 @@ U1
 Q1
 U2
 Q2
+
+# Log files
+*.log

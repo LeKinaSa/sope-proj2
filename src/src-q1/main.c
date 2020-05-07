@@ -14,12 +14,15 @@
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
+#include <semaphore.h>
 
 static bool timeout = false;
 static CmdArgs args;
 
 static int place = 1;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static sem_t nThreads;
 
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
@@ -78,6 +81,11 @@ void* threadFunc(void* arg) {
     // Memory for the message is dynamically allocated; we must free it
     free(arg);
 
+    sem_post(&nThreads); // This thread has "ended", lets unlock the semaphore
+
+    // Note: There is a small gap (right here!) where the semaphore is released but the thread is still alive (just barely)
+    // There aren't any concurrency issues here, given that the thread does literally nothing else other than dying
+
     return NULL;
 }
 
@@ -101,6 +109,11 @@ void registerHandler() {
 int main(int argc, char* argv[]) {
     args = parseArgs(argc, argv);
     registerHandler();
+
+    if(sem_init(&nThreads, 0, args.nThreads)) {
+        perror("sem_init");
+        return 1;
+    }
 
     int publicFD;
 
@@ -127,6 +140,9 @@ int main(int argc, char* argv[]) {
         bytesRead = read(publicFD, &message, sizeof(Message));
 
         if (bytesRead > 0) {
+
+            sem_wait(&nThreads);
+
             Message* requestPtr = malloc(sizeof(Message));
             memcpy(requestPtr, &message, sizeof(Message));
 

@@ -3,6 +3,7 @@
 #include "../shared/communication.h"
 #include "parsing.h"
 #include "../shared/logging.h"
+#include "stack.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -23,6 +24,7 @@ static int place = 1;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static sem_t nThreads;
+static Stack bathroomNumberStack;
 
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
@@ -113,6 +115,11 @@ int main(int argc, char* argv[]) {
     if(sem_init(&nThreads, 0, args.nThreads)) {
         perror("sem_init");
         return 1;
+    }
+
+    bathroomNumberStack = initStack(args.nPlaces);
+    for (unsigned int i = 0; i < args.nPlaces; i++) {
+        push(&bathroomNumberStack, i);
     }
 
     int publicFD;

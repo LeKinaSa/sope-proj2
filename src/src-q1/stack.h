@@ -15,7 +15,7 @@ typedef struct Stack {
 
 Stack initStack(unsigned int maxSize);
 
-bool         empty(Stack *s);
+bool         empty(const Stack *s);
 void         push( Stack *s, unsigned int i);
 unsigned int pop(  Stack *s);
 

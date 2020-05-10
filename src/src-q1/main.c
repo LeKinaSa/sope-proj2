@@ -20,7 +20,10 @@
 static bool timeout = false;
 static CmdArgs args;
 
+static bool infiniteThreads, infinitePlaces;
+
 static sem_t nThreads;
+static unsigned int place = 1;
 
 static Stack bathroomNumberStack;
 static pthread_mutex_t mutex             = PTHREAD_MUTEX_INITIALIZER;
@@ -64,10 +67,15 @@ void* threadFunc(void* arg) {
     } else {
         // Critical section
         pthread_mutex_lock(&mutex);
-        while (bathroomNumberStack.size == 0) {
-            pthread_cond_wait(&bathroomStackCond, &mutex);
+        if (!infinitePlaces) {
+            while (bathroomNumberStack.size == 0) {
+                pthread_cond_wait(&bathroomStackCond, &mutex);
+            }
+            response.pl = pop(&bathroomNumberStack);
         }
-        response.pl = pop(&bathroomNumberStack);
+        else {
+            response.pl = place++;
+        }
         pthread_mutex_unlock(&mutex);
     }
 
@@ -91,7 +99,7 @@ void* threadFunc(void* arg) {
     // Memory for the message is dynamically allocated; we must free it
     free(arg);
 
-    if (response.pl != -1) {
+    if (response.pl != -1 && !infinitePlaces) {
         // Lets return the bathroom number
         pthread_mutex_lock(&mutex);
         push(&bathroomNumberStack, response.pl);
@@ -99,7 +107,8 @@ void* threadFunc(void* arg) {
         pthread_mutex_unlock(&mutex);
     }
 
-    sem_post(&nThreads); // This thread has "ended", lets unlock the semaphore
+    if (!infiniteThreads)
+        sem_post(&nThreads); // This thread has "ended", lets unlock the semaphore
 
     // Note: There is a small gap (right here!) where the semaphore is released but the thread is still alive (just barely)
     // There aren't any concurrency issues here, given that the thread does literally nothing else other than dying
@@ -128,14 +137,21 @@ int main(int argc, char* argv[]) {
     args = parseArgs(argc, argv);
     registerHandler();
 
-    if(sem_init(&nThreads, 0, args.nThreads)) {
-        perror("sem_init");
-        return 1;
+    infiniteThreads = (args.nThreads == 0);
+    infinitePlaces = (args.nPlaces == 0);
+
+    if (!infiniteThreads) {
+        if (sem_init(&nThreads, 0, args.nThreads)) {
+            perror("sem_init");
+            return 1;
+        }
     }
 
-    bathroomNumberStack = initStack(args.nPlaces);
-    for (unsigned int i = 0; i < args.nPlaces; i++) {
-        push(&bathroomNumberStack, i);
+    if (!infinitePlaces) {
+        bathroomNumberStack = initStack(args.nPlaces);
+        for (unsigned int i = 0; i < args.nPlaces; i++) {
+            push(&bathroomNumberStack, i);
+        }
     }
 
     int publicFD;
@@ -163,8 +179,8 @@ int main(int argc, char* argv[]) {
         bytesRead = read(publicFD, &message, sizeof(Message));
 
         if (bytesRead > 0) {
-
-            sem_wait(&nThreads);
+            if (!infiniteThreads)
+                sem_wait(&nThreads);
 
             Message* requestPtr = malloc(sizeof(Message));
             memcpy(requestPtr, &message, sizeof(Message));

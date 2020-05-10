@@ -91,8 +91,10 @@ void* threadFunc(void* arg) {
 
     if (response.pl != -1) {
         // Lets return the bathroom number
+        pthread_mutex_lock(&mutex);
         push(&bathroomNumberStack, response.pl);
         pthread_cond_broadcast(&bathroomStackCond);
+        pthread_mutex_unlock(&mutex);
     }
 
     sem_post(&nThreads); // This thread has "ended", lets unlock the semaphore

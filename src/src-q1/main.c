@@ -51,13 +51,15 @@ void* threadFunc(void* arg) {
     }
 
     Message response;
+
+    bool localTimeout = timeout;
     
     response.i = requestPtr->i;
     response.pid = getpid();
     response.tid = pthread_self();
-    response.dur = timeout ? -1 : requestPtr->dur;
+    response.dur = localTimeout ? -1 : requestPtr->dur;
 
-    if (timeout) {
+    if (localTimeout) {
         response.pl = -1;
     } else {
         // Critical section
@@ -77,7 +79,7 @@ void* threadFunc(void* arg) {
         perror("close");
     }
 
-    if (!timeout) {
+    if (!localTimeout) {
         logOperation(&response, SERVER_ACCEPTED_REQUEST);
         usleep(requestPtr->dur * MILLI_TO_MICRO);
         logOperation(&response, SERVER_REQUEST_TIME_UP);

@@ -23,7 +23,7 @@ static CmdArgs args;
 static bool infiniteThreads, infinitePlaces;
 
 static sem_t nThreads;
-static unsigned int place = 1;
+static unsigned int place = 0;
 
 static Stack bathroomNumberStack;
 static pthread_mutex_t mutex             = PTHREAD_MUTEX_INITIALIZER;

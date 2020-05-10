@@ -22,7 +22,6 @@ void push(Stack *s, unsigned int i) {
 unsigned int pop(Stack *s) {
     if (!empty(s)) {
         return s->values[--s->size];
-    } else {
-        return -1;
     }
+    return -1;
 }

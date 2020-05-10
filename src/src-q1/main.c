@@ -20,11 +20,11 @@
 static bool timeout = false;
 static CmdArgs args;
 
-static int place = 1;
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
 static sem_t nThreads;
+
 static Stack bathroomNumberStack;
+static pthread_mutex_t mutex             = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  bathroomStackCond = PTHREAD_COND_INITIALIZER;
 
 void* threadFunc(void* arg) {
     Message* requestPtr = (Message*) arg;
@@ -57,11 +57,17 @@ void* threadFunc(void* arg) {
     response.tid = pthread_self();
     response.dur = timeout ? -1 : requestPtr->dur;
 
-    // Critical section
-    pthread_mutex_lock(&mutex);
-    response.pl = timeout ? -1 : place;
-    ++place;
-    pthread_mutex_unlock(&mutex);
+    if (timeout) {
+        response.pl = -1;
+    } else {
+        // Critical section
+        pthread_mutex_lock(&mutex);
+        while (bathroomNumberStack.size == 0) {
+            pthread_cond_wait(&bathroomStackCond, &mutex);
+        }
+        response.pl = pop(&bathroomNumberStack);
+        pthread_mutex_unlock(&mutex);
+    }
 
     if (write(privateFD, &response, sizeof(Message)) < 0) {
         logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
@@ -82,6 +88,12 @@ void* threadFunc(void* arg) {
 
     // Memory for the message is dynamically allocated; we must free it
     free(arg);
+
+    if (response.pl != -1) {
+        // Lets return the bathroom number
+        push(&bathroomNumberStack, response.pl);
+        pthread_cond_broadcast(&bathroomStackCond);
+    }
 
     sem_post(&nThreads); // This thread has "ended", lets unlock the semaphore
 

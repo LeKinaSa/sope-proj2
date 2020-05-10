@@ -9,7 +9,7 @@ Stack initStack(unsigned int maxSize) {
     return res;
 }
 
-bool empty(Stack *s) {
+bool empty(const Stack *s) {
     return s->size == 0;
 }
 

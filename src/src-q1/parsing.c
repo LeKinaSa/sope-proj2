@@ -18,8 +18,8 @@ struct CmdArgs parseArgs(int argc, char* argv[]) {
     struct CmdArgs res;
     res.fifoname = NULL;
     res.nSecs    = 0;
-    res.nPlaces  = 100; 
-    res.nThreads = 100;
+    res.nPlaces  = 0;
+    res.nThreads = 0;
 
     if (argc < 4 || 8 < argc) {
         printf("%s <-t nsecs> [-l nplaces] [-n nthreads] fifoname\n", argv[0]);
@@ -58,12 +58,12 @@ struct CmdArgs parseArgs(int argc, char* argv[]) {
 
         if (strcmp("-l", argv[i]) == 0) {
             if (i + 1 == argc) {
-                fprintf(stderr, "Error: \"-l\" option requires a numerical argument\n");
+                fprintf(stderr, "Error: \"-l\" option requires a positive numerical argument\n");
                 exit(1);
             } else {
                 bool success = sscanf(argv[i + 1], "%u", &res.nPlaces) == 1;
-                if (!success) {
-                    fprintf(stderr, "Error: \"-l\" option requires a numerical argument\n");
+                if (!success || res.nPlaces == 0) {
+                    fprintf(stderr, "Error: \"-l\" option requires a positive numerical argument\n");
                     exit(1);
                 }
             }
@@ -73,12 +73,12 @@ struct CmdArgs parseArgs(int argc, char* argv[]) {
 
         if (strcmp("-n", argv[i]) == 0) {
             if (i + 1 == argc) {
-                fprintf(stderr, "Error: \"-n\" option requires a numerical argument\n");
+                fprintf(stderr, "Error: \"-n\" option requires a positive numerical argument\n");
                 exit(1);
             } else {
                 bool success = sscanf(argv[i + 1], "%u", &res.nThreads) == 1;
-                if (!success) {
-                    fprintf(stderr, "Error: \"-n\" option requires a numerical argument\n");
+                if (!success || res.nThreads == 0) {
+                    fprintf(stderr, "Error: \"-n\" option requires a positive numerical argument\n");
                     exit(1);
                 }
             }

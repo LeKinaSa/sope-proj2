@@ -6,6 +6,8 @@
 
 #define MILLI_TO_MICRO 1000
 
+typedef unsigned short ushort;
+
 /**
  * @brief Structure that holds information for a message between the client and the server.
  * Can be used for requests or responses.

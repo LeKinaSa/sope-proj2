@@ -53,13 +53,23 @@ void* threadFunc(void* arg) {
         return NULL;
     }
     
-    if ((privateFD = open(privateFifoName, O_RDONLY)) < 0) {
+    // Open in O_NONBLOCK mode so that the thread doesn't get stuck on a read call
+    if ((privateFD = open(privateFifoName, O_RDONLY, O_NONBLOCK)) < 0) {
         perror("open");
         unlink(privateFifoName);
         return NULL;
     }
 
-    ssize_t readSize = read(privateFD, &response, sizeof(Message));
+    ssize_t readSize;
+    static const ushort MAX_ATTEMPTS = 8;
+    ushort numAttempts = 0;
+
+    do {
+        readSize = read(privateFD, &response, sizeof(Message));
+        usleep(MILLI_TO_MICRO);
+        ++numAttempts;
+    } while (readSize <= 0 && numAttempts < MAX_ATTEMPTS);
+
     if (readSize <= 0) {
         logOperation(&request, CLIENT_CANNOT_GET_RESPONSE);
     }

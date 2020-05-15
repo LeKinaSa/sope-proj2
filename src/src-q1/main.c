@@ -50,6 +50,10 @@ void* threadFunc(void* arg) {
     if (privateFD < 0) {
         logOperation(requestPtr, SERVER_CANNOT_SEND_RESPONSE);
         free(arg);
+
+        if (!infiniteThreads)
+            sem_post(&nThreads); // This thread has "ended", lets unlock the semaphore
+
         return NULL;
     }
 

@@ -5,7 +5,7 @@
 
 
 /**
- * @brief A very much half-assed stack implementation
+ * @brief A simple stack implementation for unsigned integers
  */
 typedef struct Stack {
     unsigned int *values; /** The values of the stack */

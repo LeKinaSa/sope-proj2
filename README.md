@@ -1,5 +1,5 @@
 # SOPE - Project 2, Group T2G04
-First part of the second project of the Operating Systems curricular unit.
+Second project of the Operating Systems curricular unit.
 
 * Clara Martins (up201806528)
 * Daniel Monteiro (up201806185)
